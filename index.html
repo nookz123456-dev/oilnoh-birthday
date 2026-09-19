@@ -117,6 +117,29 @@
   .go .hint{animation:fade 1.2s ease-out 10.5s both}
   .hint button{font:inherit;color:var(--ink);background:rgba(255,255,255,.6);border:0;border-radius:999px;padding:6px 16px;cursor:pointer}
   button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  /* ---------- ซองจดหมาย (วาดด้วย CSS) ---------- */
+  .hint{position:relative}
+  .env-wrap{position:absolute;left:50%;top:4px;translate:-50% 0;width:max-content;
+            display:grid;justify-items:center;gap:8px;animation:pop .6s ease-out both}
+  .env{position:relative;width:112px;height:74px;padding:0;border:0;border-radius:6px;background:none;cursor:pointer;
+       perspective:400px;filter:drop-shadow(0 6px 10px rgba(176,74,112,.28));animation:nudge 1.4s ease-in-out .8s infinite}
+  .env.open{animation:none}
+  .env > span{position:absolute;border-radius:6px}
+  .env-back {inset:0;background:#ff9fb8}
+  .env-paper{left:10px;right:10px;top:8px;height:58px;background:#fffaf5;z-index:1;border-radius:4px;
+             transition:transform .6s ease-out .35s}
+  .env-paper::before,.env-paper::after{content:"";position:absolute;left:12px;right:12px;height:3px;border-radius:2px;background:#ffd6e0}
+  .env-paper::before{top:12px} .env-paper::after{top:20px;right:30px}
+  .env-front{inset:0;z-index:2;background:#ffc4d3;clip-path:polygon(0 0,50% 58%,100% 0,100% 100%,0 100%)}
+  .env-flap {left:0;right:0;top:0;height:62%;z-index:3;background:#ffb0c4;border-radius:6px 6px 0 0;
+             clip-path:polygon(0 0,100% 0,50% 100%);transform-origin:50% 0;
+             transition:transform .5s ease-in-out, z-index 0s .25s}
+  .env-seal {left:50%;top:50%;translate:-50% -50%;z-index:4;font-size:20px;line-height:1;transition:opacity .2s}
+  .env.open .env-flap {transform:rotateX(180deg);z-index:0}
+  .env.open .env-seal {opacity:0}
+  .env.open .env-paper{transform:translateY(-34px)}
+  .env-label{font:500 15px/1.4 Mali,sans-serif;color:var(--soft)}
+  @keyframes nudge{0%,100%{transform:none}25%{transform:rotate(-4deg)}75%{transform:rotate(4deg) translateY(-3px)}}
   @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
   /* ---------- การ์ดจดหมาย ---------- */
@@ -362,8 +385,29 @@ function blow() {
   $('title').textContent = 'make a wish ✨';
   hint.textContent = '';
   confetti();
-  setTimeout(() => { liftForCard(); card.classList.add('show'); typeMsg(); }, 2600);
+  // ให้ดูคอนเฟตตีก่อน แล้วค่อยโผล่ปุ่มจดหมายให้แตะเปิดเอง
+  letterTimer = setTimeout(() => {
+    hint.innerHTML =
+      '<div class="env-wrap">' +
+        '<button id="openLetter" class="env" aria-label="เปิดจดหมาย">' +
+          '<span class="env-back"></span><span class="env-paper"></span>' +
+          '<span class="env-front"></span><span class="env-flap"></span><span class="env-seal">💗</span>' +
+        '</button>' +
+        '<div class="env-label">มีจดหมายถึงเธอ แตะเพื่อเปิดนะ</div>' +
+      '</div>';
+    $('openLetter').onclick = e => {
+      e.stopPropagation();
+      const env = e.currentTarget;
+      if (env.classList.contains('open')) return;
+      env.classList.add('open');                       // ฝาเปิด → กระดาษเลื่อนออก
+      letterTimer = setTimeout(() => {
+        hint.textContent = '';
+        liftForCard(); card.classList.add('show'); typeMsg();
+      }, 1100);
+    };
+  }, 2200);
 }
+let letterTimer;
 cake.addEventListener('click', blow);
 cake.addEventListener('keydown', e => (e.key === 'Enter' || e.key === ' ') && blow());
 
@@ -376,6 +420,7 @@ function liftForCard() {
 }
 
 $('again').onclick = () => {
+  clearTimeout(letterTimer);
   document.body.style.setProperty('--lift', '0px');
   card.classList.remove('show');
   cake.classList.remove('out');
